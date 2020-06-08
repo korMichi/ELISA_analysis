@@ -6,14 +6,13 @@ date: 2020/06/07
 
 import numpy as np
 import pandas as pd
-from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl import load_workbook
 import matplotlib.pyplot as plt
 
 
 def load_data(file, n):
     """
-    Loads OD values from excel file into numpy arrays
+    Loads OD values from excel file into lists
     """
     workbook = load_workbook(filename=file)
     data, data1, data2, data3, data4 = [], [], [], [], []
@@ -42,25 +41,40 @@ def load_data(file, n):
 
 def get_standard(array, i):
     """
-    Gets the values for the antibody used as a standard on the plate and saves it into a new array while deleting itsself from the old array
+    Gets the values for the antibody used as a standard on the plate
+    and saves it into a new array while deleting itsself from the old array
     """
     axis = int(input("Enter the axis of the standard (1=1 OR 2=H): "))
     standard_array = []
     value_array = []
     for x in range(i):
+        standard_array.append([])
+        value_array.append([])
         for n in range(len(array[x])):
             if axis == 1:
-                standard_array.append(array[x][n].iloc[0:7, 0])
-                value_array.append(array[x][n].drop(1, axis=1))
-            else:
-                standard_array.append(array[x][n].iloc[[0]])
-                value_array.append(array[x][n].drop(["H"]))
-    print(value_array)
+                standard_array[x].append(array[x][n].iloc[0:8, 0])
+                value_array[x].append(array[x][n].drop(1, axis=1))
+            elif axis == 2:
+                standard_array[x].append(array[x][n].iloc[[0]])
+                value_array[x].append(array[x][n].drop(["H"]))
+    return value_array, standard_array
 
 
-def analysis():
+def analysis(standard, plates):
     """
-    Chooses which timepoints to plot
+    Chooses which timepoints to plot by comparing the standard_array and
+    finding the clostest partner
+    """
+    results = pd.DataFrame()
+    for x in range(plates):
+        for n in range(len(standard[x])):
+            results["({0} {1})".format(x, n)] = standard[x][n]
+    print(results.diff(axis=1))
+
+
+def write_output():
+    """
+    Writes the values of the choosen standard_array into a excel file for further analysis
     """
 
 
@@ -77,5 +91,7 @@ def create_plot(plot_data):
 
 excel_file = input("Please enter the name of the excel file: ")
 plates = int(input("Please enter the number of plates: "))
+
 data = list(load_data(excel_file, plates))
-get_standard(data, plates)
+value_array, standard_array = get_standard(data, plates)
+number_of_sheet = analysis(standard_array, plates)
