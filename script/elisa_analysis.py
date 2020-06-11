@@ -6,7 +6,9 @@ date: 2020/06/07
 
 import numpy as np
 import pandas as pd
-from openpyxl import load_workbook
+import itertools as it
+from openpyxl import load_workbook, Workbook
+from openpyxl.utils.dataframe import dataframe_to_rows
 import matplotlib.pyplot as plt
 
 
@@ -65,17 +67,27 @@ def analysis(standard, plates):
     Chooses which timepoints to plot by comparing the standard_array and
     finding the clostest partner
     """
-    results = pd.DataFrame()
+    indices = []
+    min = -1
+    index_x = 0
+    index_n = 0
     for x in range(plates):
         for n in range(len(standard[x])):
-            results["({0} {1})".format(x, n)] = standard[x][n]
-    print(results.diff(axis=1))
+            indices.append((x, n))
+#    permutations = it.permutations(indices)
+    print(indices)
+    return indices
 
 
-def write_output():
+def write_output(filename, standard_array, value_array):
     """
     Writes the values of the choosen standard_array into a excel file for further analysis
     """
+    workbook = Workbook()
+    sheet = workbook.active
+    for value in dataframe_to_rows(standard_array[0][0].to_frame()):
+        sheet.append(value)
+    workbook.save(filename=str(filename + ".xlsx"))
 
 
 def create_plot(plot_data):
@@ -95,3 +107,5 @@ plates = int(input("Please enter the number of plates: "))
 data = list(load_data(excel_file, plates))
 value_array, standard_array = get_standard(data, plates)
 number_of_sheet = analysis(standard_array, plates)
+#print(type(standard_array[0][0]))
+#write_output(input("Filename? "), standard_array, value_array)
