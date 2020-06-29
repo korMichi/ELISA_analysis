@@ -1,7 +1,7 @@
 '''
 title: elisa_analysis.py
 author: Michael Korenkov
-date: 2020/06/07
+date: 2020/06/29
 '''
 
 import numpy as np
@@ -38,7 +38,7 @@ def load_data(file, n):
         data3 = data[2::n]
         data4 = data[3::n]
         return data1, data2, data3, data4
-    print(str(file) + " has been loaded")
+    return print(str(file) + " has been loaded")
 
 
 def get_standard(array, i):
@@ -54,29 +54,35 @@ def get_standard(array, i):
         value_array.append([])
         for n in range(len(array[x])):
             if axis == 1:
-                standard_array[x].append(array[x][n].iloc[0:8, 0])
-                value_array[x].append(array[x][n].drop(1, axis=1))
+                standard_array[x].append(array[x][n].iloc[0:8, 0].to_numpy())
+                value_array[x].append(array[x][n].drop(1, axis=1).to_numpy())
             elif axis == 2:
-                standard_array[x].append(array[x][n].iloc[[0]])
-                value_array[x].append(array[x][n].drop(["H"]))
+                standard_array[x].append(array[x][n].iloc[[0]].to_numpy())
+                value_array[x].append(array[x][n].drop(["H"]).to_numpy())
     return value_array, standard_array
 
 
-def analysis(standard, plates):
+def analysis(standard, values, plates):
     """
     Chooses which timepoints to plot by comparing the standard_array and
     finding the clostest partner
     """
-    indices = []
-    min = -1
-    index_x = 0
-    index_n = 0
+    all_means = []
     for x in range(plates):
         for n in range(len(standard[x])):
-            indices.append((x, n))
-#    permutations = it.permutations(indices)
-    print(indices)
-    return indices
+            all_means.append(standard[x][n].mean())
+    
+    mean_standard = [list(i) for i in zip(*[all_means[i:i+plates] for i in range(0, len(all_means), plates)])]
+
+    for x in range(plates):
+        if x == plates - 1:  # for loop breakes before last loop
+            break
+        else:
+            for n in range(len(standard[x])):
+                for i in range(len(standard[x])):
+                    differences = {"{0}-{1}".format(x,n) : np.array(standard_array[x][n]) - np.array(standard_array[x+1][i])}
+    print(mean_standard)
+    return differences
 
 
 def write_output(filename, standard_array, value_array):
@@ -103,9 +109,10 @@ def create_plot(plot_data):
 
 excel_file = input("Please enter the name of the excel file: ")
 plates = int(input("Please enter the number of plates: "))
-
 data = list(load_data(excel_file, plates))
 value_array, standard_array = get_standard(data, plates)
-number_of_sheet = analysis(standard_array, plates)
+
+
+number_of_sheet = analysis(standard_array, value_array, plates)
 #print(type(standard_array[0][0]))
 #write_output(input("Filename? "), standard_array, value_array)
